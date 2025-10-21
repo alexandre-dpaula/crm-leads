@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String             @id @default(cuid())
+  name            String
+  email           String             @unique
+  passwordHash    String
+  avatarUrl       String?            @map("avatar_url")
+  leads           Lead[]
+  stages          LeadStage[]
+  resetTokens     PasswordResetToken[]
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+}
+
+model LeadStage {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  leads     Lead[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, order])
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  company     String?
+  email       String?
+  phone       String?
+  value       Decimal? @db.Decimal(12, 2)
+  position    Int       @default(0)
+  stage       LeadStage @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  stageId     String?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  notes       String?
+  avatarColor String    @default("#84cfae") @map("avatar_color")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+}
